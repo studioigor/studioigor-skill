@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+.DS_Store
+
+# personal data written by the skill at runtime — never publish
+user-choices/projects.md
+user-choices/radar.md
+user-choices/proposals/*.md
+user-choices/accepted/*.md
+user-choices/rejected/*.md
