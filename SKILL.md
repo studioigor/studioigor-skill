@@ -52,9 +52,10 @@ try to make "the whole game" in one pass: that produces something nobody asked f
     the DESIGN.md changelog. Games are found through iteration.
 11. **Gauntlet only for what matters most.** Blind A/B against a bar is for critical parts
     or when the user is unimpressed (section below), not the default.
-12. **The skill learns but never changes itself.** Better techniques and user preferences
-    are stored only in `user-choices/` via `learn.py` (section below). SKILL.md,
-    `references/` and `scripts/` are never edited.
+12. **The skill learns but never changes itself.** Better techniques and the user's rules
+    about how to work are stored only in `user-choices/` via `learn.py` (section below).
+    A game's own choices stay in that game: games differ. SKILL.md, `references/` and
+    `scripts/` are never edited.
 13. **You are also the game designer.** Don't just execute — invent: signature hooks,
     mechanic variants, synergies, moments people retell. At key stages switch on the
     game-designer layer (section below). Show ideas as cards; none goes into the game
@@ -368,14 +369,20 @@ kept, but only in `<skill>/user-choices/`. **Never edit SKILL.md,
   technique worked on the first playtest, when the same failure repeated, or a stronger
   tool appeared, record a proposal: `learn.py propose --title … --phase N
   --kind technique|tool|process|fix --what … --when … --why … --source …`. One line of
-  substance, no essay. The script filters duplicates.
+  substance, no essay. The script filters duplicates. Propose only what works in any game;
+  a choice about this game's look, sound, feel or content is never a proposal.
 - **Ask at the right time.** At the end of a phase or session, if there are proposals, ask
   one `AskUserQuestion` with multiSelect "What should the skill keep?", one option per
   proposal (up to 4 per call). Chosen — `learn.py accept <ID>`, the rest —
   `learn.py reject <ID> --why …`. Don't interrupt mid-work. In autonomous mode don't ask:
   proposals can wait.
 - **User preferences.** If they say "always do it this way" or "I don't like X", save it
-  right away without asking: `learn.py prefer "…" [--phase N]`.
+  right away without asking: `learn.py prefer "…" [--phase N]`. It goes into this game's
+  `.studioigor/PREFERENCES.md` and doesn't carry over to the next game. `--global`
+  (`user-choices/preferences.md`) only for a rule about how to work with the user in any
+  game (how to ask, when to show, how much to decide alone), never for taste. In doubt — the
+  game. A game's preference beats a global one. The user took it back —
+  `learn.py unprefer "<part of the text>"`.
 - **Project wrap-up.** At release or pause — 1–3 main lessons as proposals.
 - **Tech radar.** When `status` says "tech radar: due" (every ~30 days) — a short search
   for news (engines, MCP, asset generators, Claude Code) → proposals →
@@ -409,6 +416,7 @@ Read `references/team.md` before any parallel work. In short:
   .claude/agents/          studio roles
   .studioigor/
     STATE.md               now, open questions, session log — read first
+    PREFERENCES.md         the user's choices for this game only (learn.py prefer)
     PIPELINE.md            phases and gates (studio.py)
     DECISIONS.md           decision log: who decided and why
     CONCEPT.md  STORY.md   idea, pillars, story

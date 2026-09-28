@@ -1,4 +1,5 @@
-# User preferences
+# User preferences — all games
 
-What the user said themselves — in force immediately.
+Rules about how to work with the user in any game, in their own words (learn.py prefer --global).
+A game's taste is not here: it stays in <game>/.studioigor/PREFERENCES.md.
 

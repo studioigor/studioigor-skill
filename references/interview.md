@@ -294,7 +294,8 @@ Briefly, a line per slot: the concept is a working tool, not an essay (SKILL.md,
 7. **A lesson for the skill.** If the user irritably asked again, skipped a question as
    unnecessary or said "that's how it should have been from the start" — that is a signal.
    Record it: `learn.py propose --kind process --phase 1 …`. A direct "always do it this
-   way" — straight to `learn.py prefer "…" --phase 1`.
+   way" — straight to `learn.py prefer "…" --phase 1` (this game only; `--global` only for a
+   rule about how to work with the user in any game).
 
 ## 7. Autonomous mode
 

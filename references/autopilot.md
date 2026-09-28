@@ -107,7 +107,8 @@ The user has handed over the decisions, but the game is still theirs. Decide the
 
 - **Sources of taste**, in order:
   1. the brief verbatim;
-  2. accepted preferences and improvements from `user-choices/` (`status` shows them);
+  2. this game's `.studioigor/PREFERENCES.md`, then preferences and accepted improvements
+     from `user-choices/` (`status` shows them all);
   3. the genre and references from the brief;
   4. the recommended options in the reference files.
 - **Boldness within the pillars.** From the options, take the one that makes the game

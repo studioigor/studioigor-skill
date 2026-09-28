@@ -7,6 +7,10 @@ live in user-choices/accepted/ and in INDEX.md, and `studio.py status` shows the
 phase. SKILL.md, references/ and scripts/ never change — so a skill update doesn't wipe what was
 learned, and what was learned doesn't break the skill.
 
+A game's own choices never become global rules: games differ. `prefer` writes into the game's
+.studioigor/PREFERENCES.md by default, and the next game starts clean. Only a rule about how to
+work with the user in any game goes to user-choices/preferences.md, and only with --global.
+
 Commands:
   propose --title "…" --phase N|all --kind technique|tool|process|fix --what "…"
           --when "…" --why "…" [--source "…"] [--force]
@@ -14,8 +18,13 @@ Commands:
   show <ID>
   accept <ID>… [--note "…"]         save into the skill (accepted/ + INDEX.md)
   reject <ID>… --why "…"            reject (rejected/ — so it isn't proposed again)
-  prefer "…" [--phase N|all]        a lasting user preference (in force immediately)
-  for-phase N                       what to take into account in phase N: accepted + preferences
+  prefer "…" [--phase N|all] [--global]
+                                    a lasting user preference, in force immediately: this game's
+                                    .studioigor/PREFERENCES.md; --global — a rule about how to
+                                    work in any game (user-choices/preferences.md)
+  unprefer "<part of the text>" [--project | --global]
+                                    remove a preference (the user took it back)
+  for-phase N                       what to take into account in phase N: preferences + accepted
   radar [--done "summary"]          is the tech radar due (every 30 days); --done — mark it done
 
 stdlib only.
@@ -33,6 +42,16 @@ from pathlib import Path
 UC = Path(os.environ.get("STUDIOIGOR_UC") or Path(__file__).resolve().parent.parent / "user-choices")
 DIRS = ("proposals", "accepted", "rejected")
 RADAR_DAYS = 30
+ST = ".studioigor"
+PREF = re.compile(r"^- \((.*?), P?(.*?)\) (.*)$")
+GLOBAL_PREFS_HDR = ("# User preferences — all games\n\n"
+                    "Rules about how to work with the user in any game, in their own words "
+                    "(learn.py prefer --global).\nA game's taste is not here: it stays in "
+                    "<game>/.studioigor/PREFERENCES.md.\n\n")
+PROJECT_PREFS_HDR = ("# Preferences — this game only\n\n"
+                     "The user's choices for this game, in their own words (learn.py prefer). "
+                     "They beat the global\nones in <skill>/user-choices/ and don't carry over "
+                     "to other games.\n\n")
 
 README = """# user-choices — what the skill has learned from this user
 
@@ -42,7 +61,8 @@ scripts/) doesn't change: learned items live here, on top of it.
 - `INDEX.md` — accepted improvements, one line each. Read at the start of work.
   If an accepted item contradicts the skill's general instructions, the accepted item
   wins: the user approved it.
-- `preferences.md` — the user's lasting preferences, in their own words.
+- `preferences.md` — rules about how to work with the user in any game, in their own words.
+  A game's taste is not here: it stays in `<game>/.studioigor/PREFERENCES.md`.
 - `accepted/` — full text of accepted improvements.
 - `proposals/` — awaiting the user's decision.
 - `rejected/` — rejected, with the reason, so they aren't proposed again.
@@ -61,9 +81,7 @@ def ensure() -> None:
                                      "Format: `- [ID] (P1) title — when to apply`.\n\n",
                                      encoding="utf-8")
     if not (UC / "preferences.md").exists():
-        (UC / "preferences.md").write_text("# User preferences\n\n"
-                                           "What the user said themselves — in force immediately.\n\n",
-                                           encoding="utf-8")
+        (UC / "preferences.md").write_text(GLOBAL_PREFS_HDR, encoding="utf-8")
 
 
 def read(p: Path) -> str:
@@ -116,6 +134,25 @@ def new_id() -> str:
     return f"P-{today}-{n:02d}"
 
 
+def project_root(start: str | None = None) -> Path | None:
+    p = Path(start).expanduser().resolve() if start else Path.cwd().resolve()
+    for d in [p, *p.parents]:
+        if (d / ST).is_dir():
+            return d
+    return None
+
+
+def pref_files(root: Path | None) -> list[tuple[str, Path]]:
+    """(scope, file); this game's first — it beats the global one."""
+    out = [("this game", root / ST / "PREFERENCES.md")] if root else []
+    return out + [("all games", UC / "preferences.md")]
+
+
+def prefs(p: Path) -> list[tuple[str, str, str]]:
+    """(line, phase, text) of every preference in the file."""
+    return [(line, m.group(2), m.group(3)) for line in read(p).splitlines() if (m := PREF.match(line))]
+
+
 def phase_matches(ph: str, n: str) -> bool:
     ph = ph.lower()
     if ph in ("all", "*", ""):
@@ -163,8 +200,8 @@ def cmd_list(a) -> int:
     if a.all:
         acc = len(all_items(("accepted",)))
         rej = len(all_items(("rejected",)))
-        print(f"\naccepted: {acc} · rejected: {rej} · preferences: "
-              f"{len(re.findall(r'^- ', read(UC / 'preferences.md'), re.M))}")
+        pr = " · ".join(f"{s}: {len(prefs(p))}" for s, p in pref_files(project_root(a.root)))
+        print(f"\naccepted: {acc} · rejected: {rej} · preferences — {pr}")
     return 0
 
 
@@ -217,10 +254,51 @@ def cmd_reject(a) -> int:
 
 
 def cmd_prefer(a) -> int:
-    ensure()
-    with (UC / "preferences.md").open("a", encoding="utf-8") as fh:
-        fh.write(f"- ({date.today().isoformat()}, {ptag(a.phase)}) {a.text.strip()}\n")
-    print("preference saved")
+    text = " ".join(a.text.split())
+    if a.all_games:
+        ensure()
+        dst, where = UC / "preferences.md", "for all games"
+    else:
+        root = project_root(a.root)
+        if not root:
+            print(f"no {ST}/ found upward from {Path(a.root or '.').resolve()} — cd into the game or "
+                  f"pass --root. A game's choice is saved only into that game; --global is for a rule "
+                  f"about how to work with the user in any game.")
+            return 1
+        dst, where = root / ST / "PREFERENCES.md", f"for this game only ({root.name}/{ST}/PREFERENCES.md)"
+        if not dst.exists():
+            dst.write_text(PROJECT_PREFS_HDR, encoding="utf-8")
+    if any(t.lower() == text.lower() for _, _, t in prefs(dst)):
+        print(f"already saved {where}")
+        return 0
+    with dst.open("a", encoding="utf-8") as fh:
+        fh.write(f"- ({date.today().isoformat()}, {ptag(a.phase)}) {text}\n")
+    print(f"preference saved {where}")
+    return 0
+
+
+def cmd_unprefer(a) -> int:
+    root = project_root(a.root)
+    if a.project and not root:
+        print(f"no {ST}/ found upward from {Path(a.root or '.').resolve()} — cd into the game or pass --root")
+        return 1
+    files = [(s, p) for s, p in pref_files(root)
+             if not (a.project and s != "this game") and not (a.all_games and s != "all games")]
+    want = " ".join(a.text.split()).lower()
+    every = [(s, p, line, t) for s, p in files for line, _, t in prefs(p)]
+    hits = [h for h in every if want in h[3].lower()]
+    hits = [h for h in hits if h[3].lower() == want] or hits
+    if len(hits) != 1:
+        print("several preferences match — give more of the text or --project / --global:" if hits
+              else f"no preference contains \"{a.text}\". There are:")
+        for s, _, line, _ in hits or every:
+            print(f"  [{s}] {line[2:]}")
+        return 1
+    s, p, line, _ = hits[0]
+    lines = read(p).splitlines()
+    lines.remove(line)
+    p.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    print(f"removed [{s}]: {line[2:]}")
     return 0
 
 
@@ -230,18 +308,13 @@ def ptag(phase: str) -> str:
     return "all" if phase in ("all", "*", "") else f"P{phase}"
 
 
-def for_phase(n: str) -> list[str]:
-    if not UC.is_dir():
-        return []
-    out = []
+def for_phase(n: str, root: Path | None = None) -> list[str]:
+    """This game's preferences, then the global ones, then accepted improvements."""
+    out = [f"[{s}] {t}" for s, p in pref_files(root) for _, ph, t in prefs(p) if phase_matches(ph, n)]
     for line in read(UC / "INDEX.md").splitlines():
         m = re.match(r"^- \[(.*?)\] \(P?(.*?)\) (.*)$", line)
         if m and phase_matches(m.group(2), n):
             out.append(f"[{m.group(1)}] {m.group(3).split(' → ')[0]}")
-    for line in read(UC / "preferences.md").splitlines():
-        m = re.match(r"^- \((.*?), P?(.*?)\) (.*)$", line)
-        if m and phase_matches(m.group(2), n):
-            out.append(f"[preference] {m.group(3)}")
     return out
 
 
@@ -259,11 +332,12 @@ def radar_due() -> tuple[bool, str]:
 
 
 def cmd_for_phase(a) -> int:
-    items = for_phase(str(a.n))
+    items = for_phase(str(a.n), project_root(a.root))
     if not items:
         print(f"nothing learned for phase {a.n}")
         return 0
-    print(f"take into account in phase {a.n} (accepted by the user, takes priority over the general instructions):")
+    print(f"take into account in phase {a.n} (approved by the user, takes priority over the general "
+          f"instructions; [this game] beats [all games]):")
     for i in items:
         print(f"  - {i}")
     return 0
@@ -286,6 +360,10 @@ def cmd_radar(a) -> int:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description="studioigor — learned items in user-choices/")
+    ap.add_argument("--root", default="", help="game root for preferences (searched upward by default)")
+    # --root is also accepted after the subcommand; SUPPRESS does not overwrite a value given before it.
+    common = argparse.ArgumentParser(add_help=False)
+    common.add_argument("--root", default=argparse.SUPPRESS, help=argparse.SUPPRESS)
     sp = ap.add_subparsers(dest="cmd", required=True)
     p = sp.add_parser("propose")
     p.add_argument("--title", required=True)
@@ -296,7 +374,7 @@ def main() -> int:
     p.add_argument("--why", required=True)
     p.add_argument("--source", default="")
     p.add_argument("--force", action="store_true")
-    p = sp.add_parser("list")
+    p = sp.add_parser("list", parents=[common])
     p.add_argument("--all", action="store_true")
     p = sp.add_parser("show")
     p.add_argument("id")
@@ -306,17 +384,26 @@ def main() -> int:
     p = sp.add_parser("reject")
     p.add_argument("ids", nargs="+")
     p.add_argument("--why", default="")
-    p = sp.add_parser("prefer")
+    p = sp.add_parser("prefer", parents=[common])
     p.add_argument("text")
     p.add_argument("--phase", default="all")
-    p = sp.add_parser("for-phase")
+    g = p.add_mutually_exclusive_group()
+    g.add_argument("--project", action="store_true", help="this game only (default)")
+    g.add_argument("--global", dest="all_games", action="store_true",
+                   help="a rule about how to work with the user in any game — never a game's taste")
+    p = sp.add_parser("unprefer", parents=[common])
+    p.add_argument("text", help="part of the preference text")
+    g = p.add_mutually_exclusive_group()
+    g.add_argument("--project", action="store_true", help="look only in this game")
+    g.add_argument("--global", dest="all_games", action="store_true", help="look only in the global ones")
+    p = sp.add_parser("for-phase", parents=[common])
     p.add_argument("n")
     p = sp.add_parser("radar")
     p.add_argument("--done", default="")
     a = ap.parse_args()
     return {"propose": cmd_propose, "list": cmd_list, "show": cmd_show, "accept": cmd_accept,
-            "reject": cmd_reject, "prefer": cmd_prefer, "for-phase": cmd_for_phase,
-            "radar": cmd_radar}[a.cmd](a)
+            "reject": cmd_reject, "prefer": cmd_prefer, "unprefer": cmd_unprefer,
+            "for-phase": cmd_for_phase, "radar": cmd_radar}[a.cmd](a)
 
 
 if __name__ == "__main__":

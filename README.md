@@ -75,8 +75,9 @@ Studio  More grip, more weight. "Is it fun now?"  →  mechanic locked, committe
 - 🎯 **Game first.** A built-in balance check warns when effort drifts into tests, docs or tooling.
 - 💾 **Never lost, never pushed.** Every decision lives on disk and in git; resume from any point.
   Subagents work in git worktrees. Nothing is pushed or published unless you ask.
-- 🧠 **Learns without rewriting itself.** Better techniques and your preferences are saved to
-  `user-choices/`, and only after you approve them.
+- 🧠 **Learns without rewriting itself.** Better techniques are saved to `user-choices/`, and
+  only after you approve them. Your taste stays with the game you said it about: the next
+  game starts clean, only rules about how to work carry over.
 - 🌍 **Speaks your language.**
 
 ## Autopilot: "make the game yourself"

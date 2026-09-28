@@ -656,11 +656,14 @@ def cmd_status(a) -> int:
     try:
         sys.path.insert(0, str(Path(__file__).resolve().parent))
         import learn  # noqa: E402
-        items = learn.for_phase(str(n))
+        items = learn.for_phase(str(n), root)
         if items:
-            print(f"\nkeep in mind (user-choices, approved by the user — priority over general instructions):")
+            print("\nkeep in mind (approved by the user — priority over general instructions; "
+                  "[this game] beats [all games]):")
             for i in items[:12]:
                 print(f"  - {i}")
+            if len(items) > 12:
+                print(f"  … +{len(items) - 12} more: learn.py for-phase {n}")
         pend = learn.pending_count()
         if pend:
             print(f"skill improvements awaiting a decision: {pend} — ask at the end of the phase/session (learn.py list)")

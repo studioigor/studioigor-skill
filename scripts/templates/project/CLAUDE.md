@@ -38,7 +38,9 @@ changes files. Work on the task and return the contract from your role.
   development) — taste decisions `--by proxy`, user gates `tick "…" --proxy`, rules in
   `{skill}/references/autopilot.md`.
 - "Always do it this way" / "I don't like X" — right away
-  `python3 {skill}/scripts/learn.py prefer "…"`.
+  `python3 {skill}/scripts/learn.py prefer "…"`: it stays in this game
+  (`.studioigor/PREFERENCES.md`). `--global` only for a rule about how to work with the user
+  in any game, never for this game's taste.
 
 ## Git
 - Commit at every step (a decision, closed gates, a locked mechanic):
