@@ -1,0 +1,40 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "studioigor",
+  "version": "0.1.0",
+  "description": "End-to-end agent game-development pipeline from idea to release, with research, mechanics gyms, vertical slice, content, polish, release gates and resumable on-disk state.",
+  "author": {
+    "name": "studioigor",
+    "url": "https://github.com/studioigor"
+  },
+  "homepage": "https://github.com/studioigor/studioigor-skill",
+  "repository": "https://github.com/studioigor/studioigor-skill",
+  "keywords": [
+    "game-development",
+    "skills",
+    "studioigor"
+  ],
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "studioigor",
+        "shortDescription": "Idea to game release",
+        "longDescription": "Run a staged game-development workflow from idea through research, design, environment setup, mechanics gyms, vertical slice, content, narrative, polish and release. The user remains the director for taste and scope while project state is kept on disk for resumable development.",
+        "developerName": "studioigor",
+        "category": "Developer Tools",
+        "capabilities": [
+          "Game design",
+          "Game production",
+          "Vertical slices",
+          "Release workflow"
+        ],
+        "defaultPrompt": [
+          "Help me build a game from this idea.",
+          "Continue developing this game.",
+          "Take this game from prototype to release."
+        ]
+      }
+    }
+  },
+  "license": "MIT"
+}
